@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sphère Audio Réactive</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #0c0c1d, #1a1a2e);
+            color: #e0e0ff;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        header {
+            padding: 20px;
+            text-align: center;
+            z-index: 10;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #ff00cc, #3333ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 10px rgba(255, 0, 204, 0.3);
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 1rem;
+            color: #a0a0ff;
+            letter-spacing: 1px;
+        }
+        
+        #visualizer-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        
+        #fps-counter {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            color: #00ffcc;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            z-index: 10;
+        }
+        
+        #controls-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 20;
+        }
+        
+        #controls-wrapper {
+            background: rgba(20, 20, 40, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(100, 100, 255, 0.2);
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        #shape-menu {
+            background: rgba(20, 20, 40, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(100, 100, 255, 0.2);
+            width: 300px;
+        }
+        
+        .menu-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #a0a0ff;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .shape-btn {
+            background: transparent;
+            border: 1px solid #6666ff;
+            color: #a0a0ff;
+            padding: 12px 15px;
+            width: 100%;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            margin-bottom: 10px;
+        }
+        
+        .shape-btn:hover, .shape-btn.active {
+            background: linear-gradient(90deg, #ff00cc, #3333ff);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 0 15px rgba(102, 102, 255, 0.5);
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .control-label {
+            font-size: 0.9rem;
+            color: #a0a0ff;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .control-label span {
+            color: #00ffcc;
+            font-weight: 600;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .custom-file-upload {
+            background: linear-gradient(90deg, #ff00cc, #3333ff);
+            color: white;
+            display: inline-block;
+            padding: 12px 20px;
+            cursor: pointer;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 4px 15px rgba(102, 102, 255, 0.3);
+        }
+        
+        .custom-file-upload:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 102, 255, 0.5);
+        }
+        
+        #audio-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        
+        #audio-controls button {
+            background: rgba(100, 100, 255, 0.2);
+            border: 1px solid #6666ff;
+            color: #e0e0ff;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #audio-controls button:hover {
+            background: linear-gradient(90deg, #ff00cc, #3333ff);
+            color: white;
+            border-color: transparent;
+        }
+        
+        #volume-control {
+            flex-grow: 1;
+            cursor: pointer;
+            accent-color: #6666ff;
+            height: 6px;
+            border-radius: 3px;
+        }
+        
+        #time-display {
+            font-variant-numeric: tabular-nums;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #a0a0ff;
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+        }
+        
+        #sensitivity-control {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #6666ff;
+            height: 6px;
+            border-radius: 3px;
+        }
+        
+        footer {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: #7070cc;
+            font-size: 0.9rem;
+            z-index: 10;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(102, 102, 255, 0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(102, 102, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(102, 102, 255, 0); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>SPHÈRE AUDIO RÉACTIVE</h1>
+        <div class="subtitle">Visualisez votre musique en 3D temps réel</div>
+    </header>
+    
+    <div id="fps-counter">FPS: 60</div>
+    <div id="visualizer-container"></div>
+    
+    <div id="controls-container">
+        <div id="controls-wrapper">
+            <label for="audio-file" class="custom-file-upload pulse">
+                CHOISIR UN FICHIER AUDIO
+            </label>
+            <input type="file" id="audio-file" accept="audio/*">
+            
+            <div class="control-group">
+                <div class="control-label">
+                    Sensibilité audio: <span id="sensitivity-value">1.5</span>
+                </div>
+                <input type="range" id="sensitivity-control" min="0.5" max="3" step="0.1" value="1.5">
+            </div>
+            
+            <div id="audio-controls">
+                <button id="rewind-btn">⏪</button>
+                <button id="play-pause-btn">▶️</button>
+                <button id="forward-btn">⏩</button>
+                <input type="range" id="volume-control" min="0" max="1" step="0.01" value="0.8">
+            </div>
+            
+            <div id="time-display">00:00 / 00:00</div>
+        </div>
+        
+        <div id="shape-menu">
+            <div class="menu-title">FORMES VISUELLES</div>
+            <button class="shape-btn active" data-shape="wire-sphere">Sphère Déformée</button>
+        </div>
+    </div>
+    
+    <footer>
+        Conçu pour une expérience audio-visuelle immersive • 60 FPS garantis
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Variables globales
+            let scene, camera, renderer, analyser, uniforms, sphere, composer, bloomPass;
+            let frameCount = 0, lastCalledTime = performance.now(), fps = 60;
+            let sensitivity = 1.5;
+            
+            // Éléments du DOM
+            const ui = {
+                fileInput: document.getElementById('audio-file'),
+                audioPlayer: new Audio(),
+                playPauseBtn: document.getElementById('play-pause-btn'),
+                rewindBtn: document.getElementById('rewind-btn'),
+                forwardBtn: document.getElementById('forward-btn'),
+                volumeControl: document.getElementById('volume-control'),
+                timeDisplay: document.getElementById('time-display'),
+                visualizerContainer: document.getElementById('visualizer-container'),
+                fpsCounter: document.getElementById('fps-counter'),
+                sensitivityControl: document.getElementById('sensitivity-control'),
+                sensitivityValue: document.getElementById('sensitivity-value')
+            };
+            
+            // Initialisation de Three.js
+            function init() {
+                // Création de la scène
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x0c0c1d);
+                
+                // Création de la caméra
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.z = 50;
+                
+                // Création du rendu
+                renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(window.devicePixelRatio);
+                ui.visualizerContainer.appendChild(renderer.domElement);
+                
+                // Création de la sphère
+                createSphere();
+                
+                // Gestion du redimensionnement
+                window.addEventListener('resize', onWindowResize);
+                
+                // Configuration des événements
+                setupEventListeners();
+                
+                // Démarrage de l'animation
+                animate();
+            }
+            
+            // Création de la sphère réactive
+            function createSphere() {
+                // Supprimer l'ancienne sphère si elle existe
+                if (sphere) scene.remove(sphere);
+                
+                // Géométrie et matériau
+                const geometry = new THREE.IcosahedronGeometry(15, 24);
+                const material = new THREE.MeshBasicMaterial({
+                    color: 0x6666ff,
+                    wireframe: true,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                
+                // Création de la sphère
+                sphere = new THREE.Mesh(geometry, material);
+                scene.add(sphere);
+                
+                // Positionnement de la lumière
+                const light = new THREE.PointLight(0x6666ff, 1, 100);
+                light.position.set(10, 10, 10);
+                scene.add(light);
+                
+                const ambientLight = new THREE.AmbientLight(0x404040);
+                scene.add(ambientLight);
+            }
+            
+            // Configuration des événements
+            function setupEventListeners() {
+                // Sélection de fichier audio
+                ui.fileInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        ui.audioPlayer.src = URL.createObjectURL(file);
+                        ui.audioPlayer.load();
+                        setupAudioContext();
+                    }
+                });
+                
+                // Contrôles audio
+                ui.playPauseBtn.addEventListener('click', () => {
+                    if (ui.audioPlayer.paused) {
+                        ui.audioPlayer.play();
+                        ui.playPauseBtn.textContent = '⏸️';
+                    } else {
+                        ui.audioPlayer.pause();
+                        ui.playPauseBtn.textContent = '▶️';
+                    }
+                });
+                
+                ui.rewindBtn.addEventListener('click', () => {
+                    ui.audioPlayer.currentTime = Math.max(0, ui.audioPlayer.currentTime - 10);
+                });
+                
+                ui.forwardBtn.addEventListener('click', () => {
+                    ui.audioPlayer.currentTime = Math.min(ui.audioPlayer.duration, ui.audioPlayer.currentTime + 10);
+                });
+                
+                ui.volumeControl.addEventListener('input', (e) => {
+                    ui.audioPlayer.volume = e.target.value;
+                });
+                
+                // Affichage du temps
+                ui.audioPlayer.addEventListener('timeupdate', () => {
+                    const formatTime = (time) => {
+                        const minutes = Math.floor(time / 60).toString().padStart(2, '0');
+                        const seconds = Math.floor(time % 60).toString().padStart(2, '0');
+                        return `${minutes}:${seconds}`;
+                    };
+                    ui.timeDisplay.textContent = `${formatTime(ui.audioPlayer.currentTime)} / ${formatTime(ui.audioPlayer.duration || 0)}`;
+                });
+                
+                // Sensibilité audio
+                ui.sensitivityControl.addEventListener('input', (e) => {
+                    sensitivity = parseFloat(e.target.value);
+                    ui.sensitivityValue.textContent = sensitivity.toFixed(1);
+                });
+            }
+            
+            // Configuration de l'audio
+            function setupAudioContext() {
+                const context = new (window.AudioContext || window.webkitAudioContext)();
+                const source = context.createMediaElementSource(ui.audioPlayer);
+                analyser = context.createAnalyser();
+                
+                source.connect(analyser);
+                analyser.connect(context.destination);
+                analyser.fftSize = 256;
+            }
+            
+            // Boucle d'animation
+            function animate() {
+                requestAnimationFrame(animate);
+                
+                // Calcul des FPS
+                frameCount++;
+                const now = performance.now();
+                if (now >= lastCalledTime + 1000) {
+                    fps = Math.round((frameCount * 1000) / (now - lastCalledTime));
+                    ui.fpsCounter.textContent = `FPS: ${fps}`;
+                    frameCount = 0;
+                    lastCalledTime = now;
+                }
+                
+                // Analyse audio et mise à jour de la sphère
+                if (analyser && !ui.audioPlayer.paused) {
+                    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    analyser.getByteFrequencyData(dataArray);
+                    
+                    // Calcul de l'intensité moyenne
+                    let sum = 0;
+                    for (let i = 0; i < dataArray.length; i++) {
+                        sum += dataArray[i];
+                    }
+                    const intensity = sum / dataArray.length / 255;
+                    
+                    // Mise à jour de la sphère
+                    updateSphere(intensity, dataArray);
+                }
+                
+                // Rotation de la sphère
+                if (sphere) {
+                    sphere.rotation.x += 0.002;
+                    sphere.rotation.y += 0.003;
+                }
+                
+                // Rendu
+                renderer.render(scene, camera);
+            }
+            
+            // Mise à jour de la sphère en fonction de l'audio
+            function updateSphere(intensity, dataArray) {
+                if (!sphere) return;
+                
+                // Mise à jour de l'échelle
+                const scale = 1 + intensity * sensitivity * 0.8;
+                sphere.scale.set(scale, scale, scale);
+                
+                // Déformation de la sphère
+                const positionAttribute = sphere.geometry.attributes.position;
+                const originalPositions = sphere.geometry.attributes.position.clone();
+                const vertex = new THREE.Vector3();
+                
+                for (let i = 0; i < positionAttribute.count; i++) {
+                    vertex.fromBufferAttribute(originalPositions, i);
+                    
+                    // Calcul du bruit basé sur les fréquences audio
+                    const freqIndex = Math.floor(i % dataArray.length);
+                    const freqValue = dataArray[freqIndex] / 255;
+                    
+                    // Création d'un effet de déformation
+                    const displacement = Math.sin(i * 0.2 + performance.now() * 0.002) * 
+                                        intensity * sensitivity * freqValue * 2;
+                    
+                    vertex.normalize().multiplyScalar(15 + displacement);
+                    
+                    positionAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
+                }
+                
+                positionAttribute.needsUpdate = true;
+                
+                // Changement de couleur basé sur l'intensité
+                const hue = (performance.now() * 0.001 + intensity * 0.5) % 1;
+                sphere.material.color.setHSL(hue, 0.9, 0.7);
+            }
+            
+            // Gestion du redimensionnement
+            function onWindowResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+            
+            // Initialisation
+            init();
+        });
+    </script>
+</body>
+</html>
